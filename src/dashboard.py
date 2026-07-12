@@ -210,7 +210,6 @@ st.markdown("""
 # ============================================================
 # SIDEBAR
 # ============================================================
-st.sidebar.image("https://www.airnow.gov/assets/img/aqi_square.png", width=100)
 st.sidebar.markdown("<div class='sidebar-brand'>🌿 AirVue Pakistan</div>", unsafe_allow_html=True)
 st.sidebar.markdown("<div class='sidebar-sub'>Smart City AQI Monitoring</div>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
@@ -393,6 +392,6 @@ elif page == "🔮 Forecast":
 # ============================================================
 st.markdown("""
     <div class="footer">
-        🌿 Powered by Snowflake, Streamlit & OpenAQ | © 2026 AirVue Pakistan
+        🌿 Powered by Snowflake, Streamlit & OpenAQ | Made by Uzan Khan | © 2026 AirVue Pakistan
     </div>
 """, unsafe_allow_html=True)
