@@ -2,7 +2,7 @@ name: Run ETL Pipeline
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # Har 15 minute mein
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
