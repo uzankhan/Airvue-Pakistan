@@ -2,8 +2,8 @@ name: Run IoT Simulator
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # Har 10 minute mein chale ga
-  workflow_dispatch:         # Manual run karne ke liye (tum manually bhi chala sakte ho)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
 
 jobs:
   run-simulator:
@@ -18,14 +18,14 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run Simulator
         env:
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
-        run: python src/simulator.py
+        run: |
+          python -c "import sys; print(sys.path)"
+          python src/simulator.py
