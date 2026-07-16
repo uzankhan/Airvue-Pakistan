@@ -1,10 +1,17 @@
 import os
 import time
 import logging
-import psycopg2
 import urllib.parse
 from dotenv import load_dotenv
 import datetime
+
+# 🔥 TRY: Pehle psycopg2-binary import karne ki koshish
+try:
+    import psycopg2
+except ImportError:
+    import subprocess
+    subprocess.check_call(['pip', 'install', 'psycopg2-binary'])
+    import psycopg2
 
 load_dotenv()
 
@@ -16,7 +23,6 @@ def setup_logging():
     )
     return logging.getLogger(__name__)
 
-# 🔥 POSTGRESQL (Supabase) Connection
 def get_snowflake_connection(retries=3, delay=5):
     """Returns a PostgreSQL connection to Supabase."""
     db_url = os.getenv('SUPABASE_DB_URL')
