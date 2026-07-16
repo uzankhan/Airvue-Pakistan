@@ -4,13 +4,15 @@ import logging
 import urllib.parse
 from dotenv import load_dotenv
 import datetime
+import subprocess
+import sys
 
-# 🔥 TRY: Pehle psycopg2-binary import karne ki koshish
+# 🔥 Auto-install psycopg2-binary if missing
 try:
     import psycopg2
 except ImportError:
-    import subprocess
-    subprocess.check_call(['pip', 'install', 'psycopg2-binary'])
+    print("⚠️ psycopg2 not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "psycopg2-binary"])
     import psycopg2
 
 load_dotenv()
@@ -24,7 +26,6 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 def get_snowflake_connection(retries=3, delay=5):
-    """Returns a PostgreSQL connection to Supabase."""
     db_url = os.getenv('SUPABASE_DB_URL')
     if not db_url:
         raise ValueError("❌ SUPABASE_DB_URL missing in .env file")
