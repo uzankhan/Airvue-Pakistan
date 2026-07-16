@@ -14,7 +14,7 @@ from src.utils import get_snowflake_connection
 
 st.set_page_config(
     page_title="AirVue Pakistan",
-    page_icon="🌿",
+    page_icon="🇵🇰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -24,34 +24,21 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
     <style>
-        /* ----- MAIN BACKGROUND (CREAM) ----- */
-        .stApp {
-            background-color: #FDFBF7;
-        }
-        .stApp p, .stApp div, .stApp span, .stApp label {
-            color: #2D2D2D !important;
-        }
-
-        /* ----- SIDEBAR (LIGHT OLIVE) ----- */
-        .css-1d391kg, [data-testid="stSidebar"] {
-            background-color: #EAE5D9 !important;
-        }
-        .css-1d391kg * {
-            color: #2D2D2D !important;
-        }
-
-        /* ----- HEADINGS (OLIVE GREEN) ----- */
-        h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        .stApp { background-color: #FDFBF7; }
+        .stApp p, .stApp div, .stApp span, .stApp label { color: #2D2D2D !important; }
+        .css-1d391kg, [data-testid="stSidebar"] { background-color: #EAE5D9 !important; }
+        .css-1d391kg * { color: #2D2D2D !important; }
+        h1, h2, h3, h4, h5, h6, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
             color: #4A5D23 !important;
             font-weight: bold !important;
         }
-
-        /* ----- SUBHEADINGS / BODY TEXT (DARK) ----- */
-        .stMarkdown p, .stMarkdown li, .stText, .stCaption {
+        .stMarkdown p, .stMarkdown li, .stText, .stCaption, .stSelectbox label {
             color: #2D2D2D !important;
         }
-
-        /* ----- METRIC CARDS (White + Olive Border) ----- */
+        .stSelectbox div, .stSelectbox label, .stSelectbox div * {
+            color: #2D2D2D !important;
+        }
+        .js-plotly-plot .plotly .main-svg text { fill: #2D2D2D !important; }
         [data-testid="metric-container"] {
             background-color: #FFFFFF !important;
             border: 2px solid #6B8E23 !important;
@@ -64,16 +51,8 @@ st.markdown("""
             transform: scale(1.02) !important;
             box-shadow: 0 6px 16px rgba(107, 142, 35, 0.25) !important;
         }
-        [data-testid="metric-container"] .stMetricValue {
-            color: #1A1A1A !important;
-            font-weight: bold !important;
-        }
-        [data-testid="metric-container"] .stMetricLabel {
-            color: #4A5D23 !important;
-            font-weight: 600 !important;
-        }
-
-        /* ----- DATAFRAME TABLES ----- */
+        [data-testid="metric-container"] .stMetricValue { color: #1A1A1A !important; font-weight: bold !important; }
+        [data-testid="metric-container"] .stMetricLabel { color: #4A5D23 !important; font-weight: 600 !important; }
         .dataframe {
             background-color: #FFFFFF !important;
             border-radius: 8px !important;
@@ -91,11 +70,7 @@ st.markdown("""
             border-bottom: 1px solid #EAE5D9 !important;
             padding: 8px 12px !important;
         }
-        .dataframe tr:hover td {
-            background-color: #F4F1EA !important;
-        }
-
-        /* ----- BUTTONS (OLIVE) ----- */
+        .dataframe tr:hover td { background-color: #F4F1EA !important; }
         .stButton>button {
             background-color: #6B8E23 !important;
             color: #FFFFFF !important;
@@ -110,67 +85,19 @@ st.markdown("""
             color: #FFFFFF !important;
             transform: scale(1.05) !important;
         }
-
-        /* ----- SELECTBOX / INPUTS (White + Olive Border) ----- */
         .stSelectbox div, .stNumberInput input, .stTextInput input {
             background-color: #FFFFFF !important;
             border: 1px solid #6B8E23 !important;
             border-radius: 8px !important;
             color: #2D2D2D !important;
         }
-        .stSelectbox label, .stNumberInput label, .stTextInput label {
-            color: #2D2D2D !important;
-        }
-
-        /* 🔥 FORECAST PAGE SELECTBOX FIX */
-        .stSelectbox div[data-baseweb="select"] {
-            background-color: #FFFFFF !important;
-            border: 2px solid #6B8E23 !important;
-            border-radius: 8px !important;
-        }
-        .stSelectbox div[data-baseweb="select"] * {
-            color: #2D2D2D !important;
-        }
-        .js-plotly-plot .plotly .main-svg text {
-            fill: #2D2D2D !important;
-        }
-
-        /* ----- RADIO BUTTONS (SIDEBAR NAV) ----- */
-        .stRadio > div label {
-            color: #2D2D2D !important;
-            font-weight: 500 !important;
-        }
-        .stRadio > div label:hover {
-            color: #4A5D23 !important;
-        }
-
-        /* ----- ALERT / WARNING BOXES ----- */
+        .stRadio > div label { color: #2D2D2D !important; font-weight: 500 !important; }
+        .stRadio > div label:hover { color: #4A5D23 !important; }
         .stAlert {
             background-color: #F4F1EA !important;
             border-left: 5px solid #6B8E23 !important;
             color: #2D2D2D !important;
         }
-        .stAlert .stMarkdown p {
-            color: #2D2D2D !important;
-        }
-
-        /* ----- TABS ----- */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: #EAE5D9 !important;
-            color: #2D2D2D !important;
-            border-radius: 8px 8px 0 0 !important;
-            padding: 10px 24px !important;
-            font-weight: bold !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #6B8E23 !important;
-            color: #FFFFFF !important;
-        }
-
-        /* ----- SIDEBAR BRANDING ----- */
         .sidebar-brand {
             color: #4A5D23 !important;
             font-size: 24px !important;
@@ -182,8 +109,6 @@ st.markdown("""
             text-align: center !important;
             font-size: 14px !important;
         }
-
-        /* ----- FOOTER ----- */
         .footer {
             position: fixed !important;
             bottom: 0 !important;
@@ -198,8 +123,6 @@ st.markdown("""
             font-weight: 500 !important;
             z-index: 100 !important;
         }
-
-        /* ----- SCROLLBAR ----- */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #EAE5D9; }
         ::-webkit-scrollbar-thumb { background: #6B8E23; border-radius: 4px; }
@@ -210,7 +133,8 @@ st.markdown("""
 # ============================================================
 # SIDEBAR
 # ============================================================
-st.sidebar.markdown("<div class='sidebar-brand'>🌿 AirVue Pakistan</div>", unsafe_allow_html=True)
+st.sidebar.markdown("<h1 style='text-align:center; font-size:40px; margin:0; padding:0;'>🇵🇰</h1>", unsafe_allow_html=True)
+st.sidebar.markdown("<div class='sidebar-brand' style='margin-top:-10px;'>AirVue Pakistan</div>", unsafe_allow_html=True)
 st.sidebar.markdown("<div class='sidebar-sub'>Smart City AQI Monitoring</div>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 page = st.sidebar.radio("📊 Navigate", ["Home", "🗺️ Live Map", "🔮 Forecast"])
@@ -222,7 +146,24 @@ page = st.sidebar.radio("📊 Navigate", ["Home", "🗺️ Live Map", "🔮 Fore
 def load_gold_data():
     try:
         conn = get_snowflake_connection()
-        df = pd.read_sql("SELECT * FROM ANALYTICS.CITY_DAILY ORDER BY REPORT_DATE DESC", conn)
+        query = """
+            SELECT 
+                city,
+                report_date,
+                avg_aqi,
+                max_aqi,
+                min_aqi,
+                avg_pm25,
+                avg_co2,
+                dominant_risk,
+                reading_count,
+                livability_score,
+                health_advisory,
+                created_at
+            FROM analytics.city_daily 
+            ORDER BY report_date DESC
+        """
+        df = pd.read_sql(query, conn)
         conn.close()
         df.columns = [col.lower() for col in df.columns]
         return df
@@ -234,11 +175,21 @@ def load_gold_data():
 def load_silver_recent():
     try:
         conn = get_snowflake_connection()
-        df = pd.read_sql("""
-            SELECT * FROM CLEAN.AQI_CLEAN 
-            WHERE RECORDED_AT >= DATEADD(hour, -6, CURRENT_TIMESTAMP())
-            ORDER BY RECORDED_AT DESC
-        """, conn)
+        query = """
+            SELECT 
+                city,
+                recorded_at,
+                aqi_value,
+                pm25,
+                co2_ppm,
+                health_risk,
+                latitude,
+                longitude
+            FROM clean.aqi_clean 
+            WHERE recorded_at >= NOW() - INTERVAL '6 hours'
+            ORDER BY recorded_at DESC
+        """
+        df = pd.read_sql(query, conn)
         conn.close()
         df.columns = [col.lower() for col in df.columns]
         return df
@@ -392,6 +343,6 @@ elif page == "🔮 Forecast":
 # ============================================================
 st.markdown("""
     <div class="footer">
-        🌿 Powered by Snowflake, Streamlit & OpenAQ | Made by Uzan Khan | © 2026 AirVue Pakistan
+        🇵🇰 Made by Uzan Khan | Powered by Streamlit & Supabase | © 2026 AirVue Pakistan
     </div>
 """, unsafe_allow_html=True)
