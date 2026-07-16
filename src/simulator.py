@@ -1,5 +1,7 @@
-import os
 import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 import random
 import math
@@ -9,13 +11,11 @@ import queue
 import csv
 import logging
 
-# Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.utils import setup_logging, get_snowflake_connection, calculate_aqi, get_health_risk
 
 logger = setup_logging()
 
-# ------------- SENSOR CONFIGURATION (10 sensors) -------------
+# ------------- SENSOR CONFIGURATION -------------
 SENSORS = [
     {"sensor_id": "PKS_KHI_IND_01", "city": "Karachi", "zone": "industrial"},
     {"sensor_id": "PKS_KHI_TRF_02", "city": "Karachi", "zone": "traffic"},
@@ -37,22 +37,18 @@ ZONE_BASE = {
 }
 
 CSV_FILE = "data/iot_readings.csv"
-q = queue.Queue()  # Thread-safe queue
+q = queue.Queue()
 
-# ------------- READING GENERATOR -------------
 def generate_reading(sensor):
     zone = sensor["zone"]
     base_pm25_low, base_pm25_high = ZONE_BASE[zone]["pm25"]
     base_co2_low, base_co2_high = ZONE_BASE[zone]["co2"]
     base_temp_low, base_temp_high = ZONE_BASE[zone]["temp"]
     
-    # Time-of-day effect (Peaks at 8 AM and 6 PM)
     hour = datetime.datetime.now().hour
     time_factor = 1.0 + 0.3 * math.sin((hour - 8) * math.pi / 12)
     
-    # Generate with ±15% noise
     pm25 = random.uniform(base_pm25_low, base_pm25_high) * time_factor * random.uniform(0.85, 1.15)
-    # Anomaly spike (15% chance)
     if random.random() < 0.15:
         pm25 *= random.uniform(2.5, 4.0)
     pm25 = max(0, min(500, pm25))
@@ -81,9 +77,7 @@ def generate_reading(sensor):
     }
     return reading
 
-# ------------- SNOWFLAKE INSERTER -------------
 def insert_into_snowflake(readings):
-    """Batch insert readings into Snowflake RAW.IOT_READINGS."""
     if not readings:
         return
     conn = None
@@ -92,24 +86,21 @@ def insert_into_snowflake(readings):
         cursor = conn.cursor()
         for r in readings:
             cursor.execute("""
-                INSERT INTO RAW.IOT_READINGS 
+                INSERT INTO raw.iot_readings 
                 (sensor_id, city, zone_type, pm25, pm10, co2_ppm, temperature_c, humidity_pct, wind_speed_kmh, aqi_value, severity, recorded_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (r["sensor_id"], r["city"], r["zone_type"], r["pm25"], r["pm10"], 
-                  r["co2_ppm"], r["temperature_c"], r["humidity_pct"], r["wind_speed_kmh"], 
+            """, (r["sensor_id"], r["city"], r["zone_type"], r["pm25"], r["pm10"],
+                  r["co2_ppm"], r["temperature_c"], r["humidity_pct"], r["wind_speed_kmh"],
                   r["aqi_value"], r["severity"], r["recorded_at"]))
         conn.commit()
-        logger.info(f"✅ Inserted {len(readings)} IoT readings to Snowflake.")
-        print(f"✅ {len(readings)} readings sent to Snowflake.")
+        print(f"✅ Inserted {len(readings)} IoT readings to Snowflake.")
     except Exception as e:
-        logger.error(f"❌ Snowflake insert failed: {e}")
         print(f"❌ Error: {e}")
     finally:
         if conn:
             conn.close()
 
 def save_to_csv(readings):
-    """Append readings to CSV file (backup)."""
     file_exists = os.path.isfile(CSV_FILE)
     with open(CSV_FILE, mode='a', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=readings[0].keys())
@@ -117,19 +108,16 @@ def save_to_csv(readings):
             writer.writeheader()
         writer.writerows(readings)
 
-# ------------- PRODUCER (Generate data) -------------
 def producer():
     while True:
         readings = [generate_reading(s) for s in SENSORS]
-        # Print critical alerts
         for r in readings:
             if r["severity"] in ["UNHEALTHY", "HAZARDOUS"]:
                 print(f"🔴 ALERT: {r['sensor_id']} in {r['city']} - {r['severity']} (AQI: {r['aqi_value']})")
-        q.put(readings)  # Queue for consumer
-        save_to_csv(readings)  # Backup CSV
-        time.sleep(10)  # 10 seconds interval
+        q.put(readings)
+        save_to_csv(readings)
+        time.sleep(10)
 
-# ------------- CONSUMER (Insert into Snowflake) -------------
 def consumer():
     while True:
         readings = q.get()
@@ -138,19 +126,12 @@ def consumer():
         insert_into_snowflake(readings)
         q.task_done()
 
-# ------------- MAIN -------------
 if __name__ == "__main__":
     print("🚀 Starting IoT Simulator... (Press Ctrl+C to stop)")
-    
-    # Start producer thread
     prod_thread = threading.Thread(target=producer, daemon=True)
     prod_thread.start()
-    
-    # Start consumer thread
     cons_thread = threading.Thread(target=consumer, daemon=True)
     cons_thread.start()
-    
-    # Keep main thread alive
     try:
         while True:
             time.sleep(1)
