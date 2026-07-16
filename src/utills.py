@@ -1,7 +1,8 @@
 import os
 import time
 import logging
-import snowflake.connector
+import psycopg2
+import urllib.parse
 from dotenv import load_dotenv
 import datetime
 
@@ -15,35 +16,33 @@ def setup_logging():
     )
     return logging.getLogger(__name__)
 
+# 🔥 POSTGRESQL (Supabase) Connection
 def get_snowflake_connection(retries=3, delay=5):
-    """Returns Snowflake connection with robust env var handling."""
+    """Returns a PostgreSQL connection to Supabase."""
+    db_url = os.getenv('SUPABASE_DB_URL')
+    if not db_url:
+        raise ValueError("❌ SUPABASE_DB_URL missing in .env file")
     
-    # Read env vars with fallback
-    account = os.getenv('SNOWFLAKE_ACCOUNT')
-    user = os.getenv('SNOWFLAKE_USER')
-    password = os.getenv('SNOWFLAKE_PASSWORD')
-    warehouse = os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH')
-    database = os.getenv('SNOWFLAKE_DATABASE', 'SMART_CITY_AQI')
-    schema = os.getenv('SNOWFLAKE_SCHEMA_RAW', 'RAW')
-
-    # Validate critical variables
-    if not account:
-        raise ValueError("❌ SNOWFLAKE_ACCOUNT is missing in .env file. Please set it (e.g., veazqnc-px62337).")
-    if not user:
-        raise ValueError("❌ SNOWFLAKE_USER is missing in .env file.")
-    if not password:
-        raise ValueError("❌ SNOWFLAKE_PASSWORD is missing in .env file.")
-
+    parsed = urllib.parse.urlparse(db_url)
+    host = parsed.hostname
+    port = parsed.port or 5432
+    user = parsed.username
+    password = parsed.password
+    dbname = parsed.path.lstrip('/')
+    
+    if not user or not password:
+        raise ValueError("❌ Invalid DB URL format (missing user/password)")
+    
     for attempt in range(retries):
         try:
-            conn = snowflake.connector.connect(
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
                 user=user,
                 password=password,
-                account=account,
-                warehouse=warehouse,
-                database=database,
-                schema=schema
+                dbname=dbname
             )
+            conn.autocommit = False
             return conn
         except Exception as e:
             if attempt < retries - 1:
@@ -52,4 +51,30 @@ def get_snowflake_connection(retries=3, delay=5):
             else:
                 raise e
 
-# ... (baqi functions calculate_aqi, get_health_risk same rahenge)
+def calculate_aqi(pm25):
+    if pm25 is None or pm25 < 0:
+        return None, None
+    breakpoints = [
+        (0.0, 12.0, 0, 50, "GOOD"),
+        (12.1, 35.4, 51, 100, "MODERATE"),
+        (35.5, 55.4, 101, 150, "UNHEALTHY FOR SENSITIVE"),
+        (55.5, 150.4, 151, 200, "UNHEALTHY"),
+        (150.5, 250.4, 201, 300, "VERY UNHEALTHY"),
+        (250.5, 500.4, 301, 500, "HAZARDOUS"),
+    ]
+    for c_lo, c_hi, i_lo, i_hi, label in breakpoints:
+        if c_lo <= pm25 <= c_hi:
+            aqi = ((i_hi - i_lo) / (c_hi - c_lo)) * (pm25 - c_lo) + i_lo
+            return round(aqi, 2), label
+    return None, None
+
+def get_health_risk(category):
+    risk_map = {
+        "GOOD": "LOW",
+        "MODERATE": "LOW",
+        "UNHEALTHY FOR SENSITIVE": "MEDIUM",
+        "UNHEALTHY": "HIGH",
+        "VERY UNHEALTHY": "HIGH",
+        "HAZARDOUS": "CRITICAL"
+    }
+    return risk_map.get(category, "UNKNOWN")
