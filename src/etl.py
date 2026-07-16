@@ -1,11 +1,12 @@
-import os
 import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import polars as pl
 import pandas as pd
 import logging
 import datetime
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.utils import setup_logging, get_snowflake_connection, calculate_aqi, get_health_risk
 
 logger = setup_logging()
@@ -83,10 +84,8 @@ def update_gold():
         conn = get_snowflake_connection()
         cursor = conn.cursor()
         
-        # First delete old data
         cursor.execute("DELETE FROM analytics.city_daily;")
         
-        # Then insert fresh data
         cursor.execute("""
             INSERT INTO analytics.city_daily 
                 (city, report_date, avg_aqi, max_aqi, min_aqi, avg_pm25, avg_co2, dominant_risk, reading_count, livability_score, health_advisory)
