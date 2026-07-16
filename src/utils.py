@@ -1,13 +1,13 @@
 import os
 import time
 import logging
-import snowflake.connector
+import psycopg2
+import urllib.parse
 from dotenv import load_dotenv
 import datetime
 
 load_dotenv()
 
-# ------------- LOGGING SETUP -------------
 def setup_logging():
     logging.basicConfig(
         filename='logs/project.log',
@@ -16,19 +16,33 @@ def setup_logging():
     )
     return logging.getLogger(__name__)
 
-# ------------- SNOWFLAKE CONNECTION (With Retry) -------------
+# 🔥 POSTGRESQL (Supabase) Connection
 def get_snowflake_connection(retries=3, delay=5):
-    """Returns a Snowflake connection with retry logic."""
+    """Returns a PostgreSQL connection to Supabase."""
+    db_url = os.getenv('SUPABASE_DB_URL')
+    if not db_url:
+        raise ValueError("❌ SUPABASE_DB_URL missing in .env file")
+    
+    parsed = urllib.parse.urlparse(db_url)
+    host = parsed.hostname
+    port = parsed.port or 5432
+    user = parsed.username
+    password = parsed.password
+    dbname = parsed.path.lstrip('/')
+    
+    if not user or not password:
+        raise ValueError("❌ Invalid DB URL format (missing user/password)")
+    
     for attempt in range(retries):
         try:
-            conn = snowflake.connector.connect(
-                user=os.getenv('SNOWFLAKE_USER'),
-                password=os.getenv('SNOWFLAKE_PASSWORD'),
-                account=os.getenv('SNOWFLAKE_ACCOUNT'),
-                warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
-                database=os.getenv('SNOWFLAKE_DATABASE', 'SMART_CITY_AQI'),
-                schema=os.getenv('SNOWFLAKE_SCHEMA_RAW', 'RAW')
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
+                user=user,
+                password=password,
+                dbname=dbname
             )
+            conn.autocommit = False
             return conn
         except Exception as e:
             if attempt < retries - 1:
@@ -37,9 +51,7 @@ def get_snowflake_connection(retries=3, delay=5):
             else:
                 raise e
 
-# ------------- EPA AQI CALCULATOR -------------
 def calculate_aqi(pm25):
-    """EPA standard AQI calculator. Returns (aqi_value, category)."""
     if pm25 is None or pm25 < 0:
         return None, None
     breakpoints = [
@@ -56,7 +68,6 @@ def calculate_aqi(pm25):
             return round(aqi, 2), label
     return None, None
 
-# ------------- HEALTH RISK MAPPER -------------
 def get_health_risk(category):
     risk_map = {
         "GOOD": "LOW",
