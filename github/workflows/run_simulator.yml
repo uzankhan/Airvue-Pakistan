@@ -2,7 +2,7 @@ name: Run IoT Simulator
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # Har 10 minute mein
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
